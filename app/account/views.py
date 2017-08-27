@@ -1,7 +1,7 @@
 from flask import flash, redirect, render_template, request, url_for
 from flask_login import (current_user, login_required, login_user,
                          logout_user)
-from flask_rq import get_queue
+from rq import queue
 
 from . import account
 from .. import db
@@ -42,7 +42,7 @@ def register():
         db.session.commit()
         token = user.generate_confirmation_token()
         confirm_link = url_for('account.confirm', token=token, _external=True)
-        get_queue().enqueue(
+        queue().enqueue(
             send_email,
             recipient=user.email,
             subject='Confirm Your Account',
@@ -83,7 +83,7 @@ def reset_password_request():
             token = user.generate_password_reset_token()
             reset_link = url_for(
                 'account.reset_password', token=token, _external=True)
-            get_queue().enqueue(
+            queue().enqueue(
                 send_email,
                 recipient=user.email,
                 subject='Reset Your Password',
@@ -146,7 +146,7 @@ def change_email_request():
             token = current_user.generate_email_change_token(new_email)
             change_email_link = url_for(
                 'account.change_email', token=token, _external=True)
-            get_queue().enqueue(
+            queue().enqueue(
                 send_email,
                 recipient=new_email,
                 subject='Confirm Your New Email',
@@ -180,7 +180,7 @@ def confirm_request():
     """Respond to new user's request to confirm their account."""
     token = current_user.generate_confirmation_token()
     confirm_link = url_for('account.confirm', token=token, _external=True)
-    get_queue().enqueue(
+    queue().enqueue(
         send_email,
         recipient=current_user.email,
         subject='Confirm Your Account',
@@ -245,7 +245,7 @@ def join_from_invite(user_id, token):
             user_id=user_id,
             token=token,
             _external=True)
-        get_queue().enqueue(
+        queue().enqueue(
             send_email,
             recipient=new_user.email,
             subject='You Are Invited To Join',
